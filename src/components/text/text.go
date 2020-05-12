@@ -13,20 +13,13 @@ type Text struct {
 
 // renderText renders texture from ttf font.
 func New(text string, font *ttf.Font, e *sdl.Renderer,
-			color sdl.Color, scale float32) (texture *sdl.Texture, err error) {
+			color sdl.Color, size int) (*sdl.Texture, error) {
 
 	surface, err := font.RenderUTF8Blended(text, color)
 	if err != nil {
-		return
+		return nil, err
 	}
 	defer surface.Free()
-
-	width, height := surface.W, surface.H
-	width = int32(float32(width) * scale)
-	height = int32(float32(height) * scale)
-
-	surface.W = width
-	surface.H = height
 
 	return e.CreateTextureFromSurface(surface)
 }

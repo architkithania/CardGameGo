@@ -5,6 +5,7 @@ import "C"
 import (
 	"CardGameGo/src/asset-managers/fontmanager"
 	"CardGameGo/src/asset-managers/imgmanager"
+	text2 "CardGameGo/src/components/text"
 	"CardGameGo/src/utils"
 	"errors"
 	"fmt"
@@ -39,13 +40,13 @@ type Text struct {
 
 // Engine represents SDL engine.
 type Engine struct {
-	State     int
-	Window    *sdl.Window
-	Renderer  *sdl.Renderer
-	Image *imgmanager.ImageManager
-	Font      *fontmanager.FontManager
-	Music     *mix.Music
-	Sound     *mix.Chunk
+	State    int
+	Window   *sdl.Window
+	Renderer *sdl.Renderer
+	Image    *imgmanager.ImageManager
+	Font     *fontmanager.FontManager
+	Music    *mix.Music
+	Sound    *mix.Chunk
 
 	StateText map[int]*Text
 	running   bool
@@ -83,6 +84,14 @@ func drawMainScreen(e *Engine) error {
 	if err != nil {
 		return err
 	}
+
+	// Insert Font
+	font, _ := e.Font.GetFont("universalfruitcake", 18)
+	text, _ := text2.New("Hello World", font, e.Renderer, sdl.Color{}, 1)
+
+	rect := utils.CenterTexture(text, w, h)
+	rect.Y = h/2
+	err = e.Renderer.Copy(text, nil, rect)
 
 	return nil
 }
@@ -161,7 +170,7 @@ func (e *Engine) Quit() {
 func (e *Engine) Load() {
 	assetDir := ""
 	if runtime.GOOS != "android" {
-		assetDir = filepath.Join( "assets")
+		assetDir = filepath.Join("assets")
 	}
 
 	var err error
@@ -200,11 +209,12 @@ func (e *Engine) Unload() {
 }
 
 // renderText renders texture from ttf font.
-func (e *Engine) renderText(text, font string, color sdl.Color) (texture *sdl.Texture, err error) {
-	fontPackage, ok := e.Font.Fonts[font]
+func (e *Engine) renderText(text, font string, size int, color sdl.Color) (texture *sdl.Texture, err error) {
+	fontPackage, ok := e.Font.GetFont(font, size)
 	if !ok {
-		fontPackage = e.Font.Fonts["universalfruitcake"]
+		fmt.Printf("warning: %q couldn't be loaded. Using fallback font.", font)
 	}
+
 	surface, err := fontPackage.RenderUTF8Blended(text, color)
 	if err != nil {
 		return
