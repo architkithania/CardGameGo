@@ -3,6 +3,7 @@ package main
 import "C"
 
 import (
+	"CardGameGo/src/asset-managers/fontmanager"
 	"path/filepath"
 	"runtime"
 
@@ -18,20 +19,6 @@ const (
 	winHeight = 800
 )
 
-// Game states.
-const (
-	stateRun = iota
-	stateFlap
-	stateDead
-)
-
-// States text.
-var stateText = map[int]string{
-	stateRun:  "RUN",
-	stateFlap: "FLAP",
-	stateDead: "DEAD",
-}
-
 // Text represents state text.
 type Text struct {
 	Width   int32
@@ -45,7 +32,7 @@ type Engine struct {
 	Window    *sdl.Window
 	Renderer  *sdl.Renderer
 	Sprite    *sdl.Texture
-	Font      *ttf.Font
+	Font      *fontmanager.FontManager
 	Music     *mix.Music
 	Sound     *mix.Chunk
 	StateText map[int]*Text
@@ -73,7 +60,7 @@ func (e *Engine) Init() (err error) {
 		return
 	}
 
-	err = ttf.Init()
+	e.Font, err = fontmanager.NewFontManager()
 	if err != nil {
 		return
 	}
@@ -122,7 +109,7 @@ func (e *Engine) Quit() {
 func (e *Engine) Load() {
 	assetDir := ""
 	if runtime.GOOS != "android" {
-		assetDir = filepath.Join("android", "src", "main", "assets")
+		assetDir = filepath.Join( "assets")
 	}
 
 	var err error
@@ -131,10 +118,7 @@ func (e *Engine) Load() {
 		sdl.LogError(sdl.LOG_CATEGORY_APPLICATION, "LoadTexture: %s\n", err)
 	}
 
-	e.Font, err = ttf.OpenFont(filepath.Join(assetDir, "fonts", "universalfruitcake.ttf"), 24)
-	if err != nil {
-		sdl.LogError(sdl.LOG_CATEGORY_APPLICATION, "OpenFont: %s\n", err)
-	}
+	e.Font.Load()
 
 	e.Music, err = mix.LoadMUS(filepath.Join(assetDir, "music", "frantic-gameplay.mp3"))
 	if err != nil {
@@ -144,13 +128,6 @@ func (e *Engine) Load() {
 	e.Sound, err = mix.LoadWAV(filepath.Join(assetDir, "sounds", "click.wav"))
 	if err != nil {
 		sdl.LogError(sdl.LOG_CATEGORY_APPLICATION, "LoadWAV: %s\n", err)
-	}
-
-	e.StateText = map[int]*Text{}
-	for k, v := range stateText {
-		t, _ := e.renderText(v, sdl.Color{0, 0, 0, 0})
-		_, _, tW, tH, _ := t.Query()
-		e.StateText[k] = &Text{tW, tH, t}
 	}
 }
 
@@ -167,8 +144,12 @@ func (e *Engine) Unload() {
 }
 
 // renderText renders texture from ttf font.
-func (e *Engine) renderText(text string, color sdl.Color) (texture *sdl.Texture, err error) {
-	surface, err := e.Font.RenderUTF8Blended(text, color)
+func (e *Engine) renderText(text, font string, color sdl.Color) (texture *sdl.Texture, err error) {
+	fontPackage, ok := e.Font.Fonts[font]
+	if !ok {
+		fontPackage = e.Font.Fonts["universalfruitcake"]
+	}
+	surface, err := fontPackage.RenderUTF8Blended(text, color)
 	if err != nil {
 		return
 	}
@@ -193,47 +174,11 @@ func SDL_main() {
 	e.Load()
 	defer e.Unload()
 
-	// Sprite size
-	const n = 128
-
-	// Sprite rects
-	var rects []*sdl.Rect
-	for x := 0; x < 6; x++ {
-		rect := &sdl.Rect{int32(n * x), 0, n, n}
-		rects = append(rects, rect)
-	}
-
-	e.Music.Play(-1)
-
-	var frame int = 0
-	var alpha uint8 = 255
-	var showText bool = true
-
-	var text *Text = e.StateText[stateRun]
-
 	for e.Running() {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
 			case *sdl.QuitEvent:
 				e.Quit()
-
-			case *sdl.MouseButtonEvent:
-				e.Sound.Play(2, 0)
-				if t.Type == sdl.MOUSEBUTTONDOWN && t.Button == sdl.BUTTON_LEFT {
-					alpha = 255
-					showText = true
-
-					if e.State == stateRun {
-						text = e.StateText[stateFlap]
-						e.State = stateFlap
-					} else if e.State == stateFlap {
-						text = e.StateText[stateDead]
-						e.State = stateDead
-					} else if e.State == stateDead {
-						text = e.StateText[stateRun]
-						e.State = stateRun
-					}
-				}
 
 			case *sdl.KeyboardEvent:
 				if t.Keysym.Scancode == sdl.SCANCODE_ESCAPE || t.Keysym.Scancode == sdl.SCANCODE_AC_BACK {
@@ -243,49 +188,11 @@ func SDL_main() {
 		}
 
 		e.Renderer.Clear()
-
-		var clips []*sdl.Rect
-
-		w, h := e.Window.GetSize()
-		x, y := int32(w/2), int32(h/2)
-
-		switch e.State {
-		case stateRun:
-			e.Renderer.SetDrawColor(168, 235, 254, 255)
-			clips = rects[0:2]
-
-		case stateFlap:
-			e.Renderer.SetDrawColor(251, 231, 240, 255)
-			clips = rects[2:4]
-
-		case stateDead:
-			e.Renderer.SetDrawColor(255, 250, 205, 255)
-			clips = rects[4:6]
-		}
-
-		clip := clips[frame/2]
-
+		e.Renderer.SetDrawColor(251, 231, 240, 255)
 		e.Renderer.FillRect(nil)
-		e.Renderer.Copy(e.Sprite, clip, &sdl.Rect{x - (n / 2), y - (n / 2), n, n})
-
-		if showText {
-			text.Texture.SetAlphaMod(alpha)
-			e.Renderer.Copy(text.Texture, nil, &sdl.Rect{x - (text.Width / 2), y - n*1.5, text.Width, text.Height})
-		}
 
 		e.Renderer.Present()
 		sdl.Delay(50)
-
-		frame += 1
-		if frame/2 >= 2 {
-			frame = 0
-		}
-
-		alpha -= 10
-		if alpha <= 10 {
-			alpha = 255
-			showText = false
-		}
 	}
 }
 
