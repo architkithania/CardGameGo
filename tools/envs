@@ -1,0 +1,6 @@
+export PATH=$PATH:${ANDROID_NDK_HOME}/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin
+export PATH=$PATH:/home/architkithania/Documents/Coding/Experimentation/CardGameGo/creating_apk/toolchain/bin
+
+# export PATH=$PATH:${ANDROID_NDK_HOME}/toolchains/x86_64-4.9/prebuilt/linux-x86_64/bin
+# export PATH=$PATH:/home/architkithania/Documents/Coding/Experimentation/CardGameGo/creating_apk/toolchain_x86/bin
+
