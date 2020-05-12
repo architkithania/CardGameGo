@@ -4,6 +4,10 @@ import "C"
 
 import (
 	"CardGameGo/src/asset-managers/fontmanager"
+	"CardGameGo/src/asset-managers/imgmanager"
+	"CardGameGo/src/utils"
+	"errors"
+	"fmt"
 	"path/filepath"
 	"runtime"
 
@@ -19,6 +23,13 @@ const (
 	winHeight = 800
 )
 
+//noinspection GoSnakeCaseUsage
+const (
+	MAIN_SCREEN = iota
+	GAME_SCREEN
+	SETTINGS_SCREEN
+)
+
 // Text represents state text.
 type Text struct {
 	Width   int32
@@ -31,10 +42,11 @@ type Engine struct {
 	State     int
 	Window    *sdl.Window
 	Renderer  *sdl.Renderer
-	Sprite    *sdl.Texture
+	Image *imgmanager.ImageManager
 	Font      *fontmanager.FontManager
 	Music     *mix.Music
 	Sound     *mix.Chunk
+
 	StateText map[int]*Text
 	running   bool
 }
@@ -46,6 +58,43 @@ func NewEngine() (e *Engine) {
 	return
 }
 
+func Draw(e *Engine, screen int, args ...interface{}) error {
+	switch screen {
+	case MAIN_SCREEN:
+		return drawMainScreen(e)
+	case GAME_SCREEN:
+		return drawGameSceen(e, args)
+	case SETTINGS_SCREEN:
+		return drawSettingsScreen(e, args)
+	default:
+		return errors.New("draw error: unexpected error occurred")
+	}
+}
+
+func drawMainScreen(e *Engine) error {
+	_ = e.Renderer.Clear()
+	_ = e.Renderer.SetDrawColor(66, 152, 66, 1)
+	_ = e.Renderer.FillRect(nil)
+
+	//Insert Card Image
+	image := e.Image.Images["cardicon"]
+	w, h := e.Window.GetSize()
+	err := e.Renderer.Copy(image, nil, utils.CenterTexture(image, w, h/2))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func drawGameSceen(e *Engine, args []interface{}) error {
+	return nil
+}
+
+func drawSettingsScreen(e *Engine, args []interface{}) error {
+	return nil
+}
+
 // Init initializes SDL.
 func (e *Engine) Init() (err error) {
 	err = sdl.Init(sdl.INIT_EVERYTHING)
@@ -53,14 +102,12 @@ func (e *Engine) Init() (err error) {
 		return
 	}
 
-	img.Init(img.INIT_PNG)
-
-	err = mix.Init(mix.INIT_MP3)
+	e.Font, err = fontmanager.New()
 	if err != nil {
 		return
 	}
 
-	e.Font, err = fontmanager.NewFontManager()
+	err = mix.Init(mix.INIT_MP3)
 	if err != nil {
 		return
 	}
@@ -80,7 +127,12 @@ func (e *Engine) Init() (err error) {
 		return
 	}
 
-	return
+	e.Image, err = imgmanager.New(e.Renderer)
+	if err != nil {
+		return
+	}
+
+	return nil
 }
 
 // Destroy destroys SDL and releases the memory.
@@ -113,12 +165,16 @@ func (e *Engine) Load() {
 	}
 
 	var err error
-	e.Sprite, err = img.LoadTexture(e.Renderer, filepath.Join(assetDir, "images", "sprite.png"))
+
+	err = e.Font.Load()
 	if err != nil {
-		sdl.LogError(sdl.LOG_CATEGORY_APPLICATION, "LoadTexture: %s\n", err)
+		sdl.LogError(sdl.LOG_CATEGORY_APPLICATION, "load font error: %s\n", err)
 	}
 
-	e.Font.Load()
+	err = e.Image.Load()
+	if err != nil {
+		sdl.LogError(sdl.LOG_CATEGORY_APPLICATION, "load image error: %s\n", err)
+	}
 
 	e.Music, err = mix.LoadMUS(filepath.Join(assetDir, "music", "frantic-gameplay.mp3"))
 	if err != nil {
@@ -137,7 +193,7 @@ func (e *Engine) Unload() {
 		v.Texture.Destroy()
 	}
 
-	e.Sprite.Destroy()
+	//e.Sprite.Destroy()
 	e.Font.Close()
 	e.Music.Free()
 	e.Sound.Free()
@@ -187,9 +243,11 @@ func SDL_main() {
 			}
 		}
 
-		e.Renderer.Clear()
-		e.Renderer.SetDrawColor(251, 231, 240, 255)
-		e.Renderer.FillRect(nil)
+		err = Draw(e, MAIN_SCREEN)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 
 		e.Renderer.Present()
 		sdl.Delay(50)

@@ -15,7 +15,7 @@ type FontManager struct {
 	Fonts map[string]*ttf.Font
 }
 
-func NewFontManager() (*FontManager, error) {
+func New() (*FontManager, error) {
 	err := ttf.Init()
 	if err != nil {
 		return nil, err
@@ -28,13 +28,13 @@ func NewFontManager() (*FontManager, error) {
 func (fManager *FontManager) Load() error {
 	assetDir := ""
 	if runtime.GOOS != "android" {
-		assetDir = filepath.Join( "assets", "fonts")
+		assetDir = filepath.Join( "assets")
 	}
 
 	var err error
 	for font, size := range LOADED_FONTS {
 		fontName:= strings.Split(font, ".")[0]
-		fManager.Fonts[fontName], err = ttf.OpenFont(filepath.Join(assetDir, font), size)
+		fManager.Fonts[fontName], err = ttf.OpenFont(filepath.Join(assetDir,"fonts", font), size)
 		if err != nil {
 			return err
 		}
