@@ -11,6 +11,8 @@ type RectangularButton struct {
 	BtnText string
 	Width   int32
 	Height  int32
+	X       int32
+	Y       int32
 	Color   *sdl.Color
 
 	CallBack func(...interface{}) error
@@ -41,16 +43,35 @@ func (btn *RectangularButton) Draw(x, y int32, font *ttf.Font, renderer *sdl.Ren
 	_, _, tW, tH, _ := textTexture.Query()
 	cenX, cenY := utils.GetCenterCoordinates(tW, tH, btn.Width, btn.Height)
 
-	rect1 := &sdl.Rect{
+	textRect := &sdl.Rect{
 		X: x + cenX,
 		Y: y + cenY,
 		W: tW,
 		H: tH,
 	}
-	rect.Y = btn.Height/2
-	return renderer.Copy(textTexture, nil, rect1)
+
+	btn.X = textRect.X
+	btn.Y = textRect.Y
+
+	return renderer.Copy(textTexture, nil, textRect)
 }
 
-func (btn *RectangularButton) Click() error {
-	return btn.CallBack()
+func (btn *RectangularButton) GetX() int32 {
+	return btn.X
+}
+
+func (btn *RectangularButton) GetY() int32 {
+	return btn.Y
+}
+
+func (btn *RectangularButton) GetWidth() int32 {
+	return btn.Width
+}
+
+func (btn *RectangularButton) GetHeight() int32 {
+	return btn.Height
+}
+
+func (btn *RectangularButton) RunCallback(i ...interface{}) error {
+	return btn.CallBack(i)
 }

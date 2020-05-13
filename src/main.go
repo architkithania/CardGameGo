@@ -3,6 +3,7 @@ package main
 import "C"
 
 import (
+	"CardGameGo/src/managers/eventmanager"
 	"CardGameGo/src/managers/fontmanager"
 	"CardGameGo/src/managers/imgmanager"
 	"CardGameGo/src/components/buttons/rectbutton"
@@ -38,10 +39,12 @@ type Engine struct {
 	Renderer *sdl.Renderer
 	Image    *imgmanager.ImageManager
 	Font     *fontmanager.FontManager
+	Event    map[int]*eventmanager.EventManager
 	Music    *mix.Music
 	Sound    *mix.Chunk
 
-	running   bool
+	currentScreen int
+	running       bool
 }
 
 // NewEngine returns new engine.
@@ -56,7 +59,7 @@ func Draw(e *Engine, screen int, args ...interface{}) error {
 	case MAIN_SCREEN:
 		return drawMainScreen(e)
 	case GAME_SCREEN:
-		return drawGameSceen(e, args)
+		return drawGameScreen(e, args)
 	case SETTINGS_SCREEN:
 		return drawSettingsScreen(e, args)
 	default:
@@ -86,10 +89,21 @@ func drawMainScreen(e *Engine) error {
 		return err
 	}
 
+	button.CallBack = func(...interface{}) error {
+		e.currentScreen = GAME_SCREEN
+		return nil
+	}
+
+	e.Event[e.currentScreen].RegisterEvent(button)
+
 	return nil
 }
 
-func drawGameSceen(e *Engine, args []interface{}) error {
+func drawGameScreen(e *Engine, args []interface{}) error {
+	_ = e.Renderer.Clear()
+	_ = e.Renderer.SetDrawColor(168, 235, 254, 255)
+	_ = e.Renderer.FillRect(nil)
+
 	return nil
 }
 
@@ -129,10 +143,17 @@ func (e *Engine) Init() (err error) {
 		return
 	}
 
+	e.Event = make(map[int]*eventmanager.EventManager)
+	e.Event[MAIN_SCREEN] = eventmanager.New(MAIN_SCREEN)
+	e.Event[GAME_SCREEN] = eventmanager.New(GAME_SCREEN)
+	e.Event[SETTINGS_SCREEN] = eventmanager.New(SETTINGS_SCREEN)
+
 	e.Image, err = imgmanager.New(e.Renderer)
 	if err != nil {
 		return
 	}
+
+	e.currentScreen = MAIN_SCREEN
 
 	return nil
 }
@@ -220,7 +241,10 @@ func SDL_main() {
 
 			case *sdl.MouseButtonEvent:
 				if t.Type == sdl.MOUSEBUTTONDOWN && t.Button == sdl.BUTTON_LEFT {
-
+					err := e.Event[e.currentScreen].ProcessClickEvents(t)
+					if err != nil {
+						fmt.Printf("ignoring event %q: %d\n", err, t.Timestamp, t.Timestamp)
+					}
 				}
 
 			case *sdl.KeyboardEvent:
@@ -230,7 +254,7 @@ func SDL_main() {
 			}
 		}
 
-		err = Draw(e, MAIN_SCREEN)
+		err = Draw(e, e.currentScreen)
 		if err != nil {
 			fmt.Println(err)
 			return
