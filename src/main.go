@@ -3,6 +3,7 @@ package main
 import "C"
 
 import (
+	"CardGameGo/src/components/buttons/imagebutton"
 	"CardGameGo/src/components/buttons/rectbutton"
 	"CardGameGo/src/engine"
 	"CardGameGo/src/screens"
@@ -41,34 +42,82 @@ func drawMainScreen(e *engine.Engine) error {
 		return err
 	}
 
-	// Insert Button
-	button := rectbutton.New("New Game", 350, 75, &sdl.Color{255, 0, 0, 0})
-	cenX, cenY := utils.GetCenterCoordinates(button.Width, button.Height, w, h)
+	// Insert New Game Button
+	newGameButton := rectbutton.New("New Game", 350, 75, &sdl.Color{255, 0, 0, 0})
+	cenX, newGameButtonY := utils.GetCenterCoordinates(newGameButton.Width, newGameButton.Height, w, h)
 	font, _ := e.Font.GetFont("universalfruitcake", 20)
-	err = button.Draw(cenX, cenY, font, e.Renderer)
+	err = newGameButton.Draw(cenX, newGameButtonY, font, e.Renderer)
 	if err != nil {
 		return err
 	}
-
-	button.CallBack = func(...interface{}) error {
+	newGameButton.CallBack = func(...interface{}) error {
 		e.CurrentScreen = screens.GameScreen
 		return nil
 	}
+	e.Event[e.CurrentScreen].RegisterEvent(newGameButton)
 
-	e.Event[e.CurrentScreen].RegisterEvent(button)
+
+	// Insert Settings Button
+	settingsButton := rectbutton.New("Settings Button", 350, 75, &sdl.Color{255, 0, 0, 0})
+	err = settingsButton.Draw(cenX, newGameButtonY + 100, font, e.Renderer)
+	if err != nil {
+		return err
+	}
+	settingsButton.CallBack = func(...interface{}) error {
+		e.CurrentScreen = screens.SettingsScreen
+		return nil
+	}
+	e.Event[e.CurrentScreen].RegisterEvent(settingsButton)
 
 	return nil
 }
 
+
 func drawGameScreen(e *engine.Engine, args []interface{}) error {
+	w, _ := e.Window.GetSize()
+
 	_ = e.Renderer.Clear()
 	_ = e.Renderer.SetDrawColor(168, 235, 254, 255)
 	_ = e.Renderer.FillRect(nil)
 
+	image := e.Image.Images["home"]
+	_, _, imageW, imageH, _ := image.Query()
+	homeButton := imagebutton.New(image)
+	err := homeButton.Draw(w-imageW-10, imageH, e.Renderer)
+	if err != nil {
+		return err
+	}
+	homeButton.CallBack = func(i ...interface{}) error {
+		e.CurrentScreen = screens.MainScreen
+		return nil
+	}
+
+	e.Event[e.CurrentScreen].RegisterEvent(homeButton)
 	return nil
 }
 
 func drawSettingsScreen(e *engine.Engine, args []interface{}) error {
+	w, _ := e.Window.GetSize()
+
+	_ = e.Renderer.Clear()
+	_ = e.Renderer.SetDrawColor(255, 250, 205, 255)
+	_ = e.Renderer.FillRect(nil)
+
+	image := e.Image.Images["home"]
+	_, _, imageW, imageH, _ := image.Query()
+	homeButton := imagebutton.New(image)
+	err := homeButton.Draw(w-imageW-10, imageH, e.Renderer)
+	if err != nil {
+		return err
+	}
+	homeButton.CallBack = func(i ...interface{}) error {
+		e.CurrentScreen = screens.MainScreen
+		return nil
+	}
+
+	e.Event[e.CurrentScreen].RegisterEvent(homeButton)
+	return nil
+
 	return nil
 }
 
