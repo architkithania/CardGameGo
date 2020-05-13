@@ -3,9 +3,9 @@ package main
 import "C"
 
 import (
-	"CardGameGo/src/asset-managers/fontmanager"
-	"CardGameGo/src/asset-managers/imgmanager"
-	"CardGameGo/src/components/text"
+	"CardGameGo/src/managers/fontmanager"
+	"CardGameGo/src/managers/imgmanager"
+	"CardGameGo/src/components/buttons/rectbutton"
 	"CardGameGo/src/utils"
 	"errors"
 	"fmt"
@@ -77,13 +77,14 @@ func drawMainScreen(e *Engine) error {
 		return err
 	}
 
-	// Insert Font
-	font, _ := e.Font.GetFont("universalfruitcake", 18)
-	text, _ := text.New("Hello World", font, e.Renderer, sdl.Color{}, 1)
-
-	rect := utils.CenterTexture(text, w, h)
-	rect.Y = h/2
-	err = e.Renderer.Copy(text, nil, rect)
+	// Insert Button
+	button := rectbutton.New("New Game", 350, 75, &sdl.Color{255, 0, 0, 0})
+	cenX, cenY := utils.GetCenterCoordinates(button.Width, button.Height, w, h)
+	font, _ := e.Font.GetFont("universalfruitcake", 20)
+	err = button.Draw(cenX, cenY, font, e.Renderer)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -216,6 +217,11 @@ func SDL_main() {
 			switch t := event.(type) {
 			case *sdl.QuitEvent:
 				e.Quit()
+
+			case *sdl.MouseButtonEvent:
+				if t.Type == sdl.MOUSEBUTTONDOWN && t.Button == sdl.BUTTON_LEFT {
+
+				}
 
 			case *sdl.KeyboardEvent:
 				if t.Keysym.Scancode == sdl.SCANCODE_ESCAPE || t.Keysym.Scancode == sdl.SCANCODE_AC_BACK {
