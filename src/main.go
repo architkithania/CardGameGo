@@ -17,6 +17,9 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
+var gameUi *gamemanager.GameUiManager
+var startNewGame bool = true
+
 func Draw(e *engine.Engine, screen int, args ...interface{}) error {
 	
 	switch screen {
@@ -110,7 +113,11 @@ func drawGameScreen(e *engine.Engine, args []interface{}) error {
 		Host:    hostPlayer,
 	}
 
-	gameUi := gamemanager.New(hostPlayer, dummyContext)
+	if startNewGame {
+		gameUi = gamemanager.New(hostPlayer, dummyContext)
+		gameUi.Init(e.Image, e.Event[screens.GameScreen])
+		startNewGame = false
+	}
 	err = gameUi.Draw(w, h, e.Font, e.Event[screens.GameScreen], e.Image, e.Renderer)
 	if err != nil {
 		return err

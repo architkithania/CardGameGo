@@ -25,7 +25,7 @@ func (em *EventManager) ProcessClickEvents(mouseEv *sdl.MouseButtonEvent) error 
 	for _, e := range em.RegisteredClicks {
 		if mouseEv.X >= e.GetX() && mouseEv.X <= (e.GetX() + e.GetWidth()) &&
 			mouseEv.Y >= e.GetY() && mouseEv.Y <= (e.GetY() + e.GetHeight()) {
-			return e.RunCallback()
+			return e.RunCallback(e)
 		}
 	}
 	return nil
