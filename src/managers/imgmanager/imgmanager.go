@@ -13,6 +13,7 @@ import (
 var LOADED_IMAGES = []string{
 	"cardicon.png",
 	"home.png",
+	"cards/c01.png",
 }
 
 type ImageManager struct{

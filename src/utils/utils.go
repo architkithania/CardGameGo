@@ -20,3 +20,7 @@ func GetCenterCoordinates(width, height , surfaceX, surfaceY int32) (centerX, ce
 
 	return x - (width/2), y - (height/2)
 }
+
+func Percent(value int32, percent float32) float32 {
+	return float32(value) * (percent/100)
+}

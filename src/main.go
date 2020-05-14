@@ -6,6 +6,8 @@ import (
 	"CardGameGo/src/components/buttons/imagebutton"
 	"CardGameGo/src/components/buttons/rectbutton"
 	"CardGameGo/src/engine"
+	"CardGameGo/src/managers/gamemanager"
+	"CardGameGo/src/managers/interfaces"
 	"CardGameGo/src/screens"
 	"CardGameGo/src/utils"
 	"errors"
@@ -74,12 +76,14 @@ func drawMainScreen(e *engine.Engine) error {
 
 
 func drawGameScreen(e *engine.Engine, args []interface{}) error {
-	w, _ := e.Window.GetSize()
-
+	w, h := e.Window.GetSize()
 	_ = e.Renderer.Clear()
+
+	// Background
 	_ = e.Renderer.SetDrawColor(168, 235, 254, 255)
 	_ = e.Renderer.FillRect(nil)
 
+	// Home Button
 	image := e.Image.Images["home"]
 	_, _, imageW, imageH, _ := image.Query()
 	homeButton := imagebutton.New(image)
@@ -91,8 +95,27 @@ func drawGameScreen(e *engine.Engine, args []interface{}) error {
 		e.CurrentScreen = screens.MainScreen
 		return nil
 	}
-
 	e.Event[e.CurrentScreen].RegisterEvent(homeButton)
+
+	//Draw Card Game Rack
+
+	hostPlayer := &interfaces.Player{}
+	players := map[*interfaces.Player]bool{
+		hostPlayer: true,
+	}
+
+	dummyContext := interfaces.GameContext{
+		GameId:  "hello world",
+		Players: players,
+		Host:    hostPlayer,
+	}
+
+	gameUi := gamemanager.New(hostPlayer, dummyContext)
+	err = gameUi.Draw(w, h, e.Font, e.Event[screens.GameScreen], e.Image, e.Renderer)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -124,7 +147,8 @@ func drawSettingsScreen(e *engine.Engine, args []interface{}) error {
 //export SDL_main
 func SDL_main() {
 	runtime.LockOSThread()
-	e := engine.New("Go SDL2", 480, 800)
+	//e := engine.New("Go SDL2", 480, 800)
+	e := engine.New("Go SDL2", 720, 1280)
 
 	err := e.Init()
 	if err != nil {
