@@ -20,7 +20,7 @@ type GameUiManager struct {
 	DevicePlayer  *interfaces.Player
 	CurrentPlayer *interfaces.Player
 
-	Cards       []rune
+	Cards       []string
 	PlayedCard  rune
 	DeviceTurn  bool
 	GameStarted bool
@@ -70,10 +70,20 @@ func (ui *GameUiManager) Draw(
 	renderer *sdl.Renderer,
 	) error {
 
-	return ui.drawCardRack(winWidth, winHeight, imageManager, renderer)
+	cards := []string{"c1","c2","c3","c4","c5","c6","c7","c8","c9","cX", "cJ","cQ", "cK"}
+
+
+	return ui.drawCardRack(winWidth, winHeight, cards, imageManager, renderer)
 }
 
-func (ui *GameUiManager) drawCardRack(w, h int32, imageManager *imgmanager.ImageManager, renderer *sdl.Renderer) error {
+func (ui *GameUiManager) drawCardRack(w, h int32, cards []string,
+	imageManager *imgmanager.ImageManager,
+	renderer *sdl.Renderer) error {
+
+	if len(cards) == 0 {
+		return nil
+	}
+
 	rectHeight := int32(utils.Percent(h, 20))
 
 	rect := sdl.Rect{
@@ -83,26 +93,32 @@ func (ui *GameUiManager) drawCardRack(w, h int32, imageManager *imgmanager.Image
 		H: rectHeight,
 	}
 
+	cardButtons := make([]*imagebutton.ImageButton, len(cards))
+	for i, card := range cards {
+		cardButtons[i] = imagebutton.New(GetCard(card, imageManager))
+	}
+
 	_ = renderer.SetDrawColor(255, 0, 0, 255)
 	err := renderer.FillRect(&rect)
 	if err != nil {
 		return err
 	}
 
-	image := imageManager.Images["cards/c01"]
-	_, _, imageW, _, _ := image.Query()
-
-	c01 := imagebutton.New(image)
+	imageW := cardButtons[0].Width
 
 	intervals := generateCenteredIntervals(w, imageW, 13, 45)
-	for _, e := range intervals {
-		err = c01.Draw(e, h - rectHeight, renderer)
+	for i, e := range intervals {
+		err = cardButtons[i].Draw(e, h - rectHeight, renderer)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func GetCard(card string, manager *imgmanager.ImageManager) *sdl.Texture {
+	return manager.Images["cards/fronts/" + card]
 }
 
 func generateCenteredIntervals(width, cardWidth int32, count int, delta int32) []int32 {
