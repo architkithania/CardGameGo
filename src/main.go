@@ -21,7 +21,7 @@ var gameUi *gamemanager.GameUiManager
 var startNewGame = true
 
 func Draw(e *engine.Engine, screen int, args ...interface{}) error {
-	
+
 	switch screen {
 	case screens.MainScreen:
 		return drawMainScreen(e)
@@ -47,7 +47,6 @@ func drawMainScreen(e *engine.Engine) error {
 		return err
 	}
 
-
 	// Insert New Game Button
 	color := utils.GRAY
 	font, _ := e.Font.GetFont("universalfruitcake", 20)
@@ -63,10 +62,9 @@ func drawMainScreen(e *engine.Engine) error {
 	}
 	e.Event[e.CurrentScreen].RegisterEvent(newGameButton)
 
-
 	// Insert Settings Button
 	settingsButton := rectbutton.New("Settings Button", 350, 75, color, font)
-	err = settingsButton.Draw(cenX, newGameButtonY + 100, e.Renderer)
+	err = settingsButton.Draw(cenX, newGameButtonY+100, e.Renderer)
 	if err != nil {
 		return err
 	}
@@ -78,7 +76,6 @@ func drawMainScreen(e *engine.Engine) error {
 
 	return nil
 }
-
 
 func drawGameScreen(e *engine.Engine, args []interface{}) error {
 	w, h := e.Window.GetSize()
@@ -103,10 +100,15 @@ func drawGameScreen(e *engine.Engine, args []interface{}) error {
 	e.Event[e.CurrentScreen].RegisterEvent(homeButton)
 
 	//Draw Card Game Rack
-
-	hostPlayer := &interfaces.Player{}
+	hostPlayer := &interfaces.Player{Direction: utils.East}
+	player1 := &interfaces.Player{Direction: utils.North}
+	player2 := &interfaces.Player{Direction: utils.South}
+	player3 := &interfaces.Player{Direction: utils.West}
 	players := map[*interfaces.Player]bool{
 		hostPlayer: true,
+		player1: true,
+		player2: true,
+		player3: true,
 	}
 
 	dummyContext := interfaces.GameContext{
@@ -117,7 +119,11 @@ func drawGameScreen(e *engine.Engine, args []interface{}) error {
 
 	if startNewGame {
 		gameUi = gamemanager.New(hostPlayer, dummyContext)
-		gameUi.Init(e.Image, e.Event[screens.GameScreen], e.Font)
+		err := gameUi.SetCurrentPlayer(player1)
+		if err != nil {
+			return err
+		}
+		gameUi.Init(e.Image, e.Event[screens.GameScreen], e.Font, e.Renderer)
 		startNewGame = false
 		cards := []string{"c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "cX", "cJ", "cQ", "cK"}
 		gameUi.AssignCards(cards)

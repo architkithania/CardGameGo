@@ -42,6 +42,8 @@ func (btn *RectangularButton) Draw(x, y int32, renderer *sdl.Renderer) error {
 	_ = renderer.SetDrawColor(btn.Color.R, btn.Color.G, btn.Color.B, btn.Color.A)
 	_ = renderer.FillRect(&rect)
 	textTexture, _ := text.New(btn.BtnText, btn.Font, renderer, sdl.Color{})
+	defer textTexture.Destroy()
+
 	_, _, tW, tH, _ := textTexture.Query()
 	cenX, cenY := utils.GetCenterCoordinates(tW, tH, btn.Width, btn.Height)
 

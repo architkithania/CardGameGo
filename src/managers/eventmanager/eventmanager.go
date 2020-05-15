@@ -22,11 +22,18 @@ func (em *EventManager) RegisterEvent(event events.ClickEvent) {
 }
 
 func (em *EventManager) ProcessClickEvents(mouseEv *sdl.MouseButtonEvent) error {
-	for _, e := range em.RegisteredClicks {
+	for i := len(em.RegisteredClicks) - 1; i >= 0; i-- {
+		e := em.RegisteredClicks[i]
 		if mouseEv.X >= e.GetX() && mouseEv.X <= (e.GetX() + e.GetWidth()) &&
 			mouseEv.Y >= e.GetY() && mouseEv.Y <= (e.GetY() + e.GetHeight()) {
 			return e.RunCallback(e)
 		}
 	}
+	//for _, e := range em.RegisteredClicks {
+	//	if mouseEv.X >= e.GetX() && mouseEv.X <= (e.GetX() + e.GetWidth()) &&
+	//		mouseEv.Y >= e.GetY() && mouseEv.Y <= (e.GetY() + e.GetHeight()) {
+	//		return e.RunCallback(e)
+	//	}
+	//}
 	return nil
 }
