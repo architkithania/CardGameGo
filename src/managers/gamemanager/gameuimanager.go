@@ -2,6 +2,7 @@ package gamemanager
 
 import (
 	"CardGameGo/src/components/buttons/imagebutton"
+	"CardGameGo/src/components/buttons/rectbutton"
 	"CardGameGo/src/managers/eventmanager"
 	"CardGameGo/src/managers/fontmanager"
 	"CardGameGo/src/managers/imgmanager"
@@ -13,6 +14,7 @@ import (
 )
 
 var allCards map[string]*imagebutton.ImageButton
+var playButton *rectbutton.RectangularButton
 
 type GameUiManager struct {
 	GameId string
@@ -42,7 +44,10 @@ func callBackGenerator(ui *GameUiManager, cardName string) func(...interface{}) 
 	}
 }
 
-func (ui *GameUiManager)Init(manager *imgmanager.ImageManager, eventManager *eventmanager.EventManager) {
+func (ui *GameUiManager)Init(manager *imgmanager.ImageManager,
+	eventManager *eventmanager.EventManager, fontManager *fontmanager.FontManager) {
+
+	// Init card image buttons
 	cardNames := []string{"c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "cX", "cJ", "cQ", "cK",
 		  				  "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "sX", "sJ", "sQ", "sK",
 		  				  "h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8", "h9", "hX", "hJ", "hQ", "hK",
@@ -60,6 +65,19 @@ func (ui *GameUiManager)Init(manager *imgmanager.ImageManager, eventManager *eve
 	for i := len(cardNames) - 1; i >= 0; i-- {
 		eventManager.RegisterEvent(allCards[cardNames[i]])
 	}
+
+	// Init play card button
+	font, _ := fontManager.GetFont("universalfruitcake", 20)
+	playButton = rectbutton.New("Play", 125, 40, utils.GREEN, font)
+	playButton.CallBack = func(inter ...interface{}) error {
+		if ui.selectedCard == "" {
+			return nil
+		}
+		fmt.Println("Pressed the play button!")
+		return nil
+	}
+	eventManager.RegisterEvent(playButton)
+
 }
 
 func New(devicePlayer *interfaces.Player, context interfaces.GameContext) *GameUiManager {
@@ -99,26 +117,28 @@ func (ui *GameUiManager) StartGame() {
 	ui.GameStarted = true
 }
 
+func (ui *GameUiManager) AssignCards(cards []string) {
+	ui.Cards = cards
+}
+
 func (ui *GameUiManager) Draw(
 	winWidth, winHeight int32,
-	fontManager *fontmanager.FontManager,
-	eventManager *eventmanager.EventManager,
-	imageManager *imgmanager.ImageManager,
 	renderer *sdl.Renderer,
 ) error {
 
-	cards := []string{"c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "cX", "cJ", "cQ", "cK"}
+	_, firstCardY, err := ui.drawCardRack(winWidth, winHeight, renderer)
+	if err != nil {
+		return err
+	}
 
-	return ui.drawCardRack(winWidth, winHeight, cards, imageManager, eventManager, renderer)
+	err = ui.drawPlayButton(firstCardY, renderer)
+	return nil
 }
 
-func (ui *GameUiManager) drawCardRack(w, h int32, cards []string,
-	imageManager *imgmanager.ImageManager,
-	eventManager *eventmanager.EventManager,
-	renderer *sdl.Renderer) error {
+func (ui *GameUiManager) drawCardRack(w, h int32, renderer *sdl.Renderer) (int32, int32, error) {
 
-	if len(cards) == 0 {
-		return nil
+	if len(ui.Cards) == 0 {
+		return 0, 0, nil
 	}
 
 	rectHeight := int32(utils.Percent(h, 20))
@@ -133,59 +153,39 @@ func (ui *GameUiManager) drawCardRack(w, h int32, cards []string,
 	_ = renderer.SetDrawColor(255, 0, 0, 255)
 	err := renderer.FillRect(&rect)
 	if err != nil {
-		return err
+		return 0, 0, err
 	}
 
-	imageW := allCards[cards[0]].Width
+	imageW := allCards[ui.Cards[0]].Width
 
-	intervals := generateCenteredIntervals(w, imageW, len(cards), 45)
+	intervals := generateCenteredIntervals(w, imageW, len(ui.Cards), 45)
 
 	for i, e := range intervals {
-		if cards[i] == ui.selectedCard {
-			err = allCards[cards[i]].Draw(e, h-rectHeight - 100, renderer)
+		if ui.Cards[i] == ui.selectedCard {
+			err = allCards[ui.Cards[i]].Draw(e, h-rectHeight - 100, renderer)
 		} else {
-			err = allCards[cards[i]].Draw(e, h - rectHeight, renderer)
+			err = allCards[ui.Cards[i]].Draw(e, h - rectHeight, renderer)
 		}
 
 		if err != nil {
-			return err
+			return 0, 0, err
 		}
 	}
 
-	//
-	//cardButtons := make([]*imagebutton.ImageButton, len(cards))
-	//for i, card := range cards {
-	//	cardButtons[i] = imagebutton.New(GetCard(card, imageManager))
-	//}
-	//
-	//_ = renderer.SetDrawColor(255, 0, 0, 255)
-	//err := renderer.FillRect(&rect)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//imageW := cardButtons[0].Width
-	//
-	//intervals := generateCenteredIntervals(w, imageW, 13, 45)
-	//for i, e := range intervals {
-	//	if i == ui.selectedCard {
-	//		err = cardButtons[i].Draw(e, h-rectHeight-100, renderer)
-	//	} else {
-	//		err = cardButtons[i].Draw(e, h-rectHeight, renderer)
-	//	}
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	fmt.Println("Value of I is:", i)
-	//	cardButtons[i].CallBack = func(inter ...interface{}) error {
-	//		fmt.Println("In callback! with value:", i)
-	//		ui.selectedCard = i
-	//		return nil
-	//	}
-	//
-	//	eventManager.RegisterEvent(cardButtons[i])
-	//}
+	return intervals[0], h-rectHeight, nil
+}
+
+func (ui *GameUiManager) drawPlayButton(firstCardY int32, renderer *sdl.Renderer) error {
+
+	if ui.selectedCard == "" {
+		playButton.Color = utils.SILVER
+	} else {
+		playButton.Color = utils.GREEN
+	}
+	err := playButton.Draw(20, firstCardY-150, renderer)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

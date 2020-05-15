@@ -14,22 +14,24 @@ type RectangularButton struct {
 	X       int32
 	Y       int32
 	Color   *sdl.Color
+	Font    *ttf.Font
 
 	CallBack func(...interface{}) error
 }
 
-func New(text string, width, height int32, color *sdl.Color) *RectangularButton {
+func New(text string, width, height int32, color *sdl.Color, font *ttf.Font) *RectangularButton {
 	button := &RectangularButton{
 		BtnText: text,
 		Width:   width,
 		Height:  height,
 		Color:   color,
+		Font:    font,
 	}
 
 	return button
 }
 
-func (btn *RectangularButton) Draw(x, y int32, font *ttf.Font, renderer *sdl.Renderer) error {
+func (btn *RectangularButton) Draw(x, y int32, renderer *sdl.Renderer) error {
 	rect := sdl.Rect{
 		X: x,
 		Y: y,
@@ -37,9 +39,9 @@ func (btn *RectangularButton) Draw(x, y int32, font *ttf.Font, renderer *sdl.Ren
 		H: btn.Height,
 	}
 
-	_ = renderer.SetDrawColor(243, 241, 239, 1)
+	_ = renderer.SetDrawColor(btn.Color.R, btn.Color.G, btn.Color.B, btn.Color.A)
 	_ = renderer.FillRect(&rect)
-	textTexture, _ := text.New(btn.BtnText, font, renderer, sdl.Color{})
+	textTexture, _ := text.New(btn.BtnText, btn.Font, renderer, sdl.Color{})
 	_, _, tW, tH, _ := textTexture.Query()
 	cenX, cenY := utils.GetCenterCoordinates(tW, tH, btn.Width, btn.Height)
 

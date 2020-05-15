@@ -18,7 +18,7 @@ import (
 )
 
 var gameUi *gamemanager.GameUiManager
-var startNewGame bool = true
+var startNewGame = true
 
 func Draw(e *engine.Engine, screen int, args ...interface{}) error {
 	
@@ -47,11 +47,13 @@ func drawMainScreen(e *engine.Engine) error {
 		return err
 	}
 
+
 	// Insert New Game Button
-	newGameButton := rectbutton.New("New Game", 350, 75, &sdl.Color{255, 0, 0, 0})
-	cenX, newGameButtonY := utils.GetCenterCoordinates(newGameButton.Width, newGameButton.Height, w, h)
+	color := utils.GRAY
 	font, _ := e.Font.GetFont("universalfruitcake", 20)
-	err = newGameButton.Draw(cenX, newGameButtonY, font, e.Renderer)
+	newGameButton := rectbutton.New("New Game", 350, 75, color, font)
+	cenX, newGameButtonY := utils.GetCenterCoordinates(newGameButton.Width, newGameButton.Height, w, h)
+	err = newGameButton.Draw(cenX, newGameButtonY, e.Renderer)
 	if err != nil {
 		return err
 	}
@@ -63,8 +65,8 @@ func drawMainScreen(e *engine.Engine) error {
 
 
 	// Insert Settings Button
-	settingsButton := rectbutton.New("Settings Button", 350, 75, &sdl.Color{255, 0, 0, 0})
-	err = settingsButton.Draw(cenX, newGameButtonY + 100, font, e.Renderer)
+	settingsButton := rectbutton.New("Settings Button", 350, 75, color, font)
+	err = settingsButton.Draw(cenX, newGameButtonY + 100, e.Renderer)
 	if err != nil {
 		return err
 	}
@@ -115,10 +117,13 @@ func drawGameScreen(e *engine.Engine, args []interface{}) error {
 
 	if startNewGame {
 		gameUi = gamemanager.New(hostPlayer, dummyContext)
-		gameUi.Init(e.Image, e.Event[screens.GameScreen])
+		gameUi.Init(e.Image, e.Event[screens.GameScreen], e.Font)
 		startNewGame = false
+		cards := []string{"c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "cX", "cJ", "cQ", "cK"}
+		gameUi.AssignCards(cards)
 	}
-	err = gameUi.Draw(w, h, e.Font, e.Event[screens.GameScreen], e.Image, e.Renderer)
+
+	err = gameUi.Draw(w, h, e.Renderer)
 	if err != nil {
 		return err
 	}
@@ -146,8 +151,6 @@ func drawSettingsScreen(e *engine.Engine, args []interface{}) error {
 	}
 
 	e.Event[e.CurrentScreen].RegisterEvent(homeButton)
-	return nil
-
 	return nil
 }
 
