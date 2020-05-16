@@ -5,6 +5,7 @@ import (
 	"github.com/veandco/go-sdl2/ttf"
 )
 
+// A simple text rendering component.
 type Text struct {
 	Width int32
 	Height int32

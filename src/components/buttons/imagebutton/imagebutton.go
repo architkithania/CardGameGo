@@ -2,7 +2,10 @@ package imagebutton
 
 import "github.com/veandco/go-sdl2/sdl"
 
+// An implementation of the button interface. It provides an image that can run a callback upon being
+// clicked
 type ImageButton struct {
+	// Check rectbutton.RectangularButton for more details on attributes
 	Width  int32
 	Height int32
 	X      int32
@@ -13,6 +16,7 @@ type ImageButton struct {
 	CallBack func(...interface{}) error
 }
 
+// Provided Constructor
 func New(image *sdl.Texture) *ImageButton {
 	_, _, imageW, imageH, _ := image.Query()
 	imageBtn := ImageButton{
@@ -40,6 +44,7 @@ func (btn *ImageButton) Draw(x, y int32, renderer *sdl.Renderer) error {
 	return renderer.Copy(btn.imageTexture, nil, &rect)
 }
 
+// Getters and Setters required by the ClickEvent interface
 func (btn *ImageButton) GetX() int32 {
 	return btn.X
 }

@@ -1,3 +1,4 @@
+// Some commonly used utility functions are defined in this file
 package utils
 
 import "github.com/veandco/go-sdl2/sdl"

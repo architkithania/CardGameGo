@@ -1,3 +1,6 @@
+// Use this colors file to develop a color palate for the application so that a consistent color theme
+// can be developed throughout the application. THis also has the added benefit of caching the colors so
+// that the same color does not need to be repeatedly created (Although the performance gain is negligible)
 package utils
 
 import "github.com/veandco/go-sdl2/sdl"

@@ -7,18 +7,32 @@ import (
 	"github.com/veandco/go-sdl2/ttf"
 )
 
+// An implementation of the button interface. This is the most basic form of the button, providing
+// a rectangle with text on top.
 type RectangularButton struct {
+	// The text that would be displayed on top of the button. Currently the text would
+	// always be black color but changes can be made to Draw function in order to change
+	// this behavior
 	BtnText string
-	Width   int32
-	Height  int32
-	X       int32
-	Y       int32
-	Color   *sdl.Color
-	Font    *ttf.Font
 
+	// Size attributes of the button
+	Width  int32
+	Height int32
+
+	// Position where the button should be rendered on the screen
+	X int32
+	Y int32
+
+	// Color of the button background (the enclosing rectangle of the button)
+	Color *sdl.Color
+	Font  *ttf.Font
+
+	// The callback function that gets called when the button is clicked. Note that the function
+	// isn't directly called by the EventManager but rather through the RunCallback method
 	CallBack func(...interface{}) error
 }
 
+// Provided Constructor
 func New(text string, width, height int32, color *sdl.Color, font *ttf.Font) *RectangularButton {
 	button := &RectangularButton{
 		BtnText: text,
@@ -31,6 +45,8 @@ func New(text string, width, height int32, color *sdl.Color, font *ttf.Font) *Re
 	return button
 }
 
+// Method used to draw the button on the screen through the use of the provided
+// sdl.Renderer
 func (btn *RectangularButton) Draw(x, y int32, renderer *sdl.Renderer) error {
 	rect := sdl.Rect{
 		X: x,
@@ -60,6 +76,7 @@ func (btn *RectangularButton) Draw(x, y int32, renderer *sdl.Renderer) error {
 	return renderer.Copy(textTexture, nil, textRect)
 }
 
+// Getters and setters required by the ClickEvent interface
 func (btn *RectangularButton) GetX() int32 {
 	return btn.X
 }

@@ -1,3 +1,9 @@
+# This file is used to compile the Go Code into a .so file that can be referenced from Java
+#
+# Before running this file, ensure that all the required environment variables in the tools/envs folder is defined.
+# If not defined, define them in either your system environment file or in the tools/envs file
+#
+# Run this script from the project's root directory.
 source tools/envs
 
 CC=arm-linux-androideabi-gcc \

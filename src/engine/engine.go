@@ -1,3 +1,7 @@
+// The main game engine for the game. It jobs include the following:
+// - Provide ways to initialise the SDL library
+// - Loads the different asset managers and the event manager
+// - Unloads the different asset managers when they are no longer being used
 package engine
 
 import (
@@ -13,6 +17,11 @@ import (
 	"runtime"
 )
 
+// Basic constants used for initialisation. Note that these constants do not impact the game screen
+// on the android platform, but are instead used to set the view window for development.
+//
+// For example: Set these values to 1920, 1080 respectively for developing for 1920x1080p resolutions.
+// this will provide a more realistic view of the app while developing
 var (
 	winTitle string
 	winWidth int32
@@ -21,15 +30,36 @@ var (
 
 type Engine struct {
 	State    int
+
+	// The main window object of the application
 	Window   *sdl.Window
+
+	// The main renderer for the application. For simplicity, only one renderer
+	// is used throughout the entire application.
 	Renderer *sdl.Renderer
+
+	// The image manager for the application. Refer to src/managers/imgmanager/imgmanager.go for more info
 	Image    *imgmanager.ImageManager
+
+	// The font manager for the application. Refer to src/managers/fontmanager/fontmanager.go for more info
 	Font     *fontmanager.FontManager
+
+	// The event manager for the application. The event managers are divided by screen as the event manager
+	// use a simple linear scan to fire events. Separating the events by different screens allows for some
+	// optimization and responsiveness in the application.
+	//
+	//Refer to src/managers/eventmanager/eventmanager.go for more info
 	Event    map[int]*eventmanager.EventManager
+
+	// The default SDL implementation of the music API. No wrappers provided at the moment
 	Music    *mix.Music
 	Sound    *mix.Chunk
 
+	// A variable keeping track of the current screen that is being rendered. The value of this variable
+	// should be one provided by src/screens/screens.go
 	CurrentScreen int
+
+	// Indicates whether the application is running
 	Running       bool
 }
 
@@ -44,7 +74,7 @@ func New(title string, width, height int32) (e *Engine) {
 	return
 }
 
-// Init initializes SDL.
+// Init initializes SDL as well as the custom wrappers for multiple SDL packages
 func (e *Engine) Init() (err error) {
 	err = sdl.Init(sdl.INIT_EVERYTHING)
 	if err != nil {
@@ -76,6 +106,7 @@ func (e *Engine) Init() (err error) {
 		return
 	}
 
+	// An event manager for every screen
 	e.Event = make(map[int]*eventmanager.EventManager)
 	for _, screen := range screens.Screens {
 		e.Event[screen] = eventmanager.New(screen)

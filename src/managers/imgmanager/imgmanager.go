@@ -1,3 +1,14 @@
+// An abstraction to working with images in SDL2. This package takes care of all the underlying mechanisms of
+// loading an image. Note that these images are not clickable and do not fire any callbacks. For callback
+// oriented images refer to the imgbutton package under src/components/buttons/imagebutton.go.
+//
+// Note that there is very poor tooling for resizing images in SDL2 and therefore the recommended way is to simply
+// have multiple image files with different sizes. This package keeps *ALL* the loaded images in memory for the
+// entirety of the project. This is different from the font manager which lazily imports the fonts as needed. This
+// is done because loading assets is a time consuming operation and sacrificing a little start up time is preferable
+// to maintain fluidity throughout the application.
+//
+// Note that all images must be places under the assets/images folder.
 package imgmanager
 
 import (
@@ -10,6 +21,7 @@ import (
 	"strings"
 )
 
+// All the images that will be used throughout the application are put here.
 var LOADED_IMAGES = []string{
 	"cardicon.png",
 	"home.png",
