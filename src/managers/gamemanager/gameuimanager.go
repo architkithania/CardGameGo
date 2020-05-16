@@ -20,6 +20,8 @@ var claimButton *rectbutton.RectangularButton = nil
 var playerIcon *rectbutton.RectangularButton = nil
 var claimedHandsText *rectbutton.RectangularButton = nil
 
+var cardYPosition int32
+
 type GameUiManager struct {
 	GameId string
 
@@ -79,7 +81,8 @@ func (ui *GameUiManager) Init(manager *imgmanager.ImageManager,
 		if ui.selectedCard == "" {
 			return nil
 		}
-		//fmt.Println("Pressed the play button!")
+		ui.PlayedCards[ui.DevicePlayer.Direction] = ui.selectedCard
+		ui.removeSelectedCard()
 		return nil
 	}
 	eventManager.RegisterEvent(playButton)
@@ -87,7 +90,6 @@ func (ui *GameUiManager) Init(manager *imgmanager.ImageManager,
 	// Init claim button
 	claimButton = rectbutton.New("Claim", 200, 100, utils.GREEN, font)
 	claimButton.CallBack = func(i ...interface{}) error {
-		fmt.Println("In claimed callback")
 		ui.claimedHands++
 		return nil
 	}
@@ -179,7 +181,7 @@ func (ui *GameUiManager) Draw(
 func (ui *GameUiManager) drawCardRack(w, h int32, renderer *sdl.Renderer) (int32, int32, error) {
 
 	if len(ui.Cards) == 0 {
-		return 0, 0, nil
+		return 0, cardYPosition, nil
 	}
 
 	rectHeight := int32(utils.Percent(h, 20))
@@ -228,7 +230,9 @@ func (ui *GameUiManager) drawCardRack(w, h int32, renderer *sdl.Renderer) (int32
 		}
 	}
 
-	return intervals[0], h - rectHeight, nil
+	cardYPosition = h - rectHeight
+
+	return intervals[0], cardYPosition, nil
 }
 
 func (ui *GameUiManager) drawPlayButton(firstCardY int32, renderer *sdl.Renderer) error {
@@ -362,6 +366,18 @@ func (ui *GameUiManager) drawClaimedHands(renderer *sdl.Renderer) error {
 	}
 
 	return nil
+}
+
+func (ui *GameUiManager) removeSelectedCard() {
+	newCards := make([]string, len(ui.Cards) - 1)
+	index := 0
+	for _, e := range ui.Cards {
+		if e != ui.selectedCard {
+			newCards[index] = e
+			index++
+		}
+	}
+	ui.Cards = newCards
 }
 
 func GetCard(card string, manager *imgmanager.ImageManager) *sdl.Texture {
