@@ -19,6 +19,7 @@ var playButton *rectbutton.RectangularButton = nil
 var claimButton *rectbutton.RectangularButton = nil
 var playerIcon *rectbutton.RectangularButton = nil
 var claimedHandsText *rectbutton.RectangularButton = nil
+var newGameButton *rectbutton.RectangularButton = nil
 
 var cardYPosition int32
 
@@ -91,6 +92,9 @@ func (ui *GameUiManager) Init(manager *imgmanager.ImageManager,
 	claimButton = rectbutton.New("Claim", 200, 100, utils.GREEN, font)
 	claimButton.CallBack = func(i ...interface{}) error {
 		ui.claimedHands++
+		for i := range ui.PlayedCards {
+			ui.PlayedCards[i] = ""
+		}
 		return nil
 	}
 	eventManager.RegisterEvent(claimButton)
@@ -103,6 +107,14 @@ func (ui *GameUiManager) Init(manager *imgmanager.ImageManager,
 
 	// Init claimed hands text
 	claimedHandsText = rectbutton.New("Claimed: " + strconv.Itoa(ui.claimedHands), 150, 50, &sdl.Color{168, 235, 254, 255}, font)
+
+	// Init New Game Button
+	newGameButton = rectbutton.New("New Game", 150, 50, utils.GREEN, font)
+	newGameButton.CallBack = func(i ...interface{}) error {
+		ui.NewGame()
+		return nil
+	}
+	eventManager.RegisterEvent(newGameButton)
 }
 
 func New(devicePlayer *interfaces.Player, context interfaces.GameContext) *GameUiManager {
@@ -120,6 +132,16 @@ func New(devicePlayer *interfaces.Player, context interfaces.GameContext) *GameU
 	}
 
 	return &ui
+}
+
+func (ui *GameUiManager) NewGame() {
+	cards := []string{"c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "cX", "cJ", "cQ", "cK"}
+	ui.AssignCards(cards)
+	for i := range ui.PlayedCards {
+		ui.PlayedCards[i] = ""
+	}
+	ui.selectedCard = ""
+	ui.claimedHands = 0
 }
 
 func (ui *GameUiManager) AddNewPlayer(player *interfaces.Player) {
@@ -174,6 +196,16 @@ func (ui *GameUiManager) Draw(
 	}
 
 	err = ui.drawClaimedHands(renderer)
+	if err != nil {
+		return err
+	}
+
+	if ui.DevicePlayer == ui.Host {
+		err = ui.drawNewGameButton(winWidth, renderer)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -378,6 +410,10 @@ func (ui *GameUiManager) removeSelectedCard() {
 		}
 	}
 	ui.Cards = newCards
+}
+
+func (ui *GameUiManager) drawNewGameButton(width int32, renderer *sdl.Renderer) error {
+	return newGameButton.Draw((width - newGameButton.Width)/2, 50, renderer)
 }
 
 func GetCard(card string, manager *imgmanager.ImageManager) *sdl.Texture {
