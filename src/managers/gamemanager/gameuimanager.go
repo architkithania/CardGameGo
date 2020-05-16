@@ -11,12 +11,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
+	"strconv"
 )
 
 var allCards = make(map[string]*imagebutton.ImageButton)
 var playButton *rectbutton.RectangularButton = nil
-var playerIcons *rectbutton.RectangularButton = nil
-var dummyCard *rectbutton.RectangularButton = nil
+var claimButton *rectbutton.RectangularButton = nil
+var playerIcon *rectbutton.RectangularButton = nil
+var claimedHandsText *rectbutton.RectangularButton = nil
 
 type GameUiManager struct {
 	GameId string
@@ -26,13 +28,13 @@ type GameUiManager struct {
 	DevicePlayer  *interfaces.Player
 	CurrentPlayer *interfaces.Player
 
-	Cards []string
-
-	PlayedCard  rune
+	Cards       []string
+	PlayedCards []string
 	DeviceTurn  bool
 	GameStarted bool
 
 	selectedCard string
+	claimedHands int
 }
 
 func callBackGenerator(ui *GameUiManager, cardName string) func(...interface{}) error {
@@ -77,16 +79,28 @@ func (ui *GameUiManager) Init(manager *imgmanager.ImageManager,
 		if ui.selectedCard == "" {
 			return nil
 		}
-		fmt.Println("Pressed the play button!")
+		//fmt.Println("Pressed the play button!")
 		return nil
 	}
 	eventManager.RegisterEvent(playButton)
 
-	// Init Player Icons
-	playerIcons = rectbutton.New("", 150, 150, utils.SILVER, font)
-	playerIcons.CallBack = func(i ...interface{}) error {
+	// Init claim button
+	claimButton = rectbutton.New("Claim", 200, 100, utils.GREEN, font)
+	claimButton.CallBack = func(i ...interface{}) error {
+		fmt.Println("In claimed callback")
+		ui.claimedHands++
 		return nil
 	}
+	eventManager.RegisterEvent(claimButton)
+
+	// Init Player Icons
+	playerIcon = rectbutton.New("", 150, 150, utils.SILVER, font)
+	playerIcon.CallBack = func(i ...interface{}) error {
+		return nil
+	}
+
+	// Init claimed hands text
+	claimedHandsText = rectbutton.New("Claimed: " + strconv.Itoa(ui.claimedHands), 150, 50, &sdl.Color{168, 235, 254, 255}, font)
 }
 
 func New(devicePlayer *interfaces.Player, context interfaces.GameContext) *GameUiManager {
@@ -97,7 +111,7 @@ func New(devicePlayer *interfaces.Player, context interfaces.GameContext) *GameU
 		DevicePlayer:  devicePlayer,
 		CurrentPlayer: nil,
 		Cards:         nil,
-		PlayedCard:    0,
+		PlayedCards:   []string{"", "", "", ""},
 		DeviceTurn:    false,
 		GameStarted:   false,
 		selectedCard:  "",
@@ -141,16 +155,23 @@ func (ui *GameUiManager) Draw(
 	}
 
 	if ui.CurrentPlayer == ui.DevicePlayer {
-		err = ui.drawPlayButton(firstCardY - 100, renderer)
+		err = ui.drawPlayButton(firstCardY-100, renderer)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = ui.drawOpponents(winWidth, winHeight, renderer)
+	err = ui.drawClaimButton(winWidth, firstCardY-100, renderer)
 	if err != nil {
 		return err
 	}
+
+	err = ui.drawOpponentsAndPlayedCards(winWidth, winHeight, renderer)
+	if err != nil {
+		return err
+	}
+
+	err = ui.drawClaimedHands(renderer)
 
 	return nil
 }
@@ -217,7 +238,7 @@ func (ui *GameUiManager) drawPlayButton(firstCardY int32, renderer *sdl.Renderer
 	} else {
 		playButton.Color = utils.GREEN
 	}
-	err := playButton.Draw(20, firstCardY-150, renderer)
+	err := playButton.Draw(20, firstCardY-125, renderer)
 	if err != nil {
 		return err
 	}
@@ -225,7 +246,7 @@ func (ui *GameUiManager) drawPlayButton(firstCardY int32, renderer *sdl.Renderer
 	return nil
 }
 
-func (ui *GameUiManager) drawOpponents(w, h int32, renderer *sdl.Renderer) error {
+func (ui *GameUiManager) drawOpponentsAndPlayedCards(w, h int32, renderer *sdl.Renderer) error {
 	numDirections := len(utils.DirectionOrder)
 
 	var startIndex int
@@ -235,10 +256,9 @@ func (ui *GameUiManager) drawOpponents(w, h int32, renderer *sdl.Renderer) error
 		}
 	}
 
-	localOrder := []int{utils.DirectionOrder[(startIndex + 1)%numDirections],
-						utils.DirectionOrder[(startIndex + 2)%numDirections],
-						utils.DirectionOrder[(startIndex + 3)%numDirections]}
-
+	localOrder := []int{utils.DirectionOrder[(startIndex+1)%numDirections],
+		utils.DirectionOrder[(startIndex+2)%numDirections],
+		utils.DirectionOrder[(startIndex+3)%numDirections]}
 
 	// Draw Left Player
 	for count, orderElem := range localOrder {
@@ -247,37 +267,38 @@ func (ui *GameUiManager) drawOpponents(w, h int32, renderer *sdl.Renderer) error
 				switch count {
 				case 0:
 					// Draw Left
-					playerIcons.BtnText = utils.DirectionToString(player.Direction)
-					if player == ui.CurrentPlayer {
-						playerIcons.Color = utils.BRIGHT_GREEN
-					} else {
-						playerIcons.Color = utils.SILVER
+					x, y := int32(15), h/2-50
+					imageX, imageY := x+playerIcon.Width+15, y-50
+					err := ui.drawPlayerIcon(player, x, y, renderer)
+					if err != nil {
+						return err
 					}
-					err := playerIcons.Draw(15, h/2 - 150, renderer)
+					err = ui.drawPlayedCard(player, imageX, imageY, renderer)
 					if err != nil {
 						return err
 					}
 				case 1:
 					// Draw Top
-					playerIcons.BtnText = utils.DirectionToString(player.Direction)
-					if player == ui.CurrentPlayer {
-						playerIcons.Color = utils.BRIGHT_GREEN
-					} else {
-						playerIcons.Color = utils.SILVER
+					x, y := w/2-playerIcon.Width/2, int32(150)
+					leftX, leftY := int32(15), h/2-50
+					imageX, imageY := leftX+playerIcon.Width+110, leftY-200
+					err := ui.drawPlayerIcon(player, x, y, renderer)
+					if err != nil {
+						return err
 					}
-					err := playerIcons.Draw(w/2 - playerIcons.Width/2, 150, renderer)
+					err = ui.drawPlayedCard(player, imageX, imageY, renderer)
 					if err != nil {
 						return err
 					}
 				case 2:
 					// Draw Right
-					playerIcons.BtnText = utils.DirectionToString(player.Direction)
-					if player == ui.CurrentPlayer {
-						playerIcons.Color = utils.BRIGHT_GREEN
-					} else {
-						playerIcons.Color = utils.SILVER
+					x, y := w-playerIcon.Width-15, h/2-50
+					imageX, imageY := x-allCards["c1"].Width-15, y-50
+					err := ui.drawPlayerIcon(player, x, y, renderer)
+					if err != nil {
+						return err
 					}
-					err := playerIcons.Draw(w - playerIcons.Width - 15,h/2 - 150, renderer)
+					err = ui.drawPlayedCard(player, imageX, imageY, renderer)
 					if err != nil {
 						return err
 					}
@@ -286,21 +307,59 @@ func (ui *GameUiManager) drawOpponents(w, h int32, renderer *sdl.Renderer) error
 		}
 	}
 
+	// Draw player played card if any
+	if playedCard := ui.PlayedCards[ui.DevicePlayer.Direction]; playedCard != "" {
+		leftX, leftY := int32(15), h/2-50
+		imageX, imageY := leftX+playerIcon.Width+110, leftY+playerIcon.Height/2
+		err := ui.drawPlayedCard(ui.DevicePlayer, imageX, imageY, renderer)
+		if err != nil {
+			return err
+		}
+	}
 
-	//// Draw the left player
-	//direction = utils.DirectionOrder[startIndex%numDirections]
-	//err := playerIcons[direction].Draw(15, h/2 - 150, renderer)
-	//if err != nil {
-	//	return err
-	//}
-	//startIndex += 1
-	//
-	//// Draw the right player
-	//direction = utils.DirectionOrder[startIndex%numDirections]
-	//err = playerIcons[direction].Draw(15, h/2 - 150, renderer)
-	//if err != nil {
-	//	return err
-	//}
+	return nil
+}
+
+func (ui *GameUiManager) drawPlayerIcon(player *interfaces.Player, x, y int32, renderer *sdl.Renderer) error {
+	playerIcon.BtnText = utils.DirectionToString(player.Direction)
+	if player == ui.CurrentPlayer {
+		playerIcon.Color = utils.BRIGHT_GREEN
+	} else {
+		playerIcon.Color = utils.SILVER
+	}
+	err := playerIcon.Draw(x, y, renderer)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ui *GameUiManager) drawPlayedCard(player *interfaces.Player, imageX int32, imageY int32, renderer *sdl.Renderer) error {
+	if playedCard := ui.PlayedCards[player.Direction]; playedCard != "" {
+		err := allCards[playedCard].Draw(imageX, imageY, renderer)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (ui *GameUiManager) drawClaimButton(winWidth, cardY int32, renderer *sdl.Renderer) error {
+	err := claimButton.Draw(winWidth-claimButton.Width-20, cardY-125, renderer)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ui *GameUiManager) drawClaimedHands(renderer *sdl.Renderer) error {
+	claimedHandsText.BtnText = "Claimed: " + strconv.Itoa(ui.claimedHands)
+	err := claimedHandsText.Draw(50, 50, renderer)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

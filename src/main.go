@@ -73,7 +73,6 @@ func drawMainScreen(e *engine.Engine) error {
 		return nil
 	}
 	e.Event[e.CurrentScreen].RegisterEvent(settingsButton)
-
 	return nil
 }
 
@@ -119,7 +118,7 @@ func drawGameScreen(e *engine.Engine, args []interface{}) error {
 
 	if startNewGame {
 		gameUi = gamemanager.New(hostPlayer, dummyContext)
-		err := gameUi.SetCurrentPlayer(player1)
+		err := gameUi.SetCurrentPlayer(hostPlayer)
 		if err != nil {
 			return err
 		}
